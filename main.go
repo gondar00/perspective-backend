@@ -305,7 +305,7 @@ func main() {
 
     router.GET("/questions", getQuestions(db))
     router.POST("/users", createUser(db))
-    router.GET("/answers", createAnswers(db))
+    router.POST("/answers", createAnswers(db))
 
     router.Run(":" + port)
 }
