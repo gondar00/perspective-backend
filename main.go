@@ -2,6 +2,7 @@ package main
 
 import (
     "database/sql"
+    "encoding/json"
     "github.com/joho/godotenv"
     "net/http"
     "fmt"
@@ -125,27 +126,29 @@ func getQuestions(db *sql.DB) gin.HandlerFunc {
 
 func createUser(db *sql.DB) gin.HandlerFunc {
     return func(c *gin.Context) {
-        email := c.Param("email")
+        buf := make([]byte, 1024)
+        num, _ := c.Request.Body.Read(buf)
+        reqBody := string(buf[0:num])
 
-        stmt, err := db.Prepare("INSERT INTO users(email) VALUES ($1)")
+        user := User{}
+
+        json.Unmarshal([]byte(reqBody), &user)
+        fmt.Println(user.Email)
+
+        stmt, err := db.Prepare("INSERT INTO users(email) VALUES ($1) RETURNING id")
         if err != nil {
             log.Fatalf("[x] Error. Reason: %s", err.Error())
         }
 
-        user := &User{
-            Email: email,
-        }
+        var id int
+        errr := stmt.QueryRow(user.Email).Scan(&id)
 
-        res, err := stmt.Exec(user.Email)
-        fmt.Println(err)
+        if errr != nil {
+            fmt.Println(err)
+        }
 
         defer stmt.Close()
 
-        if err != nil {
-            log.Fatalf("[x] Error when getting the list of questions. Reason: %s", err.Error())
-        }
-
-        id, _ := res.LastInsertId()
         c.JSON(http.StatusOK, id)
     }
 }
@@ -155,6 +158,10 @@ func createAnswers(db *sql.DB) gin.HandlerFunc {
         answers := c.Param("answers")
 
         fmt.Println(answers)
+        // fmt.Println(c.Param)
+        fmt.Println(c.Param("answers"))
+
+
 
         // answers = make([]*Answer, 0)
         // for _, answer := range mList {
