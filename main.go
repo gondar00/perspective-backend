@@ -15,59 +15,6 @@ import (
     cors "github.com/rs/cors/wrapper/gin"
 )
 
-// var createTableStatements = []string{
-//     `CREATE TABLE IF NOT EXISTS questions (
-//         id SERIAL PRIMARY KEY,
-//         question VARCHAR(255) NULL,
-//         dimension VARCHAR(255) NULL
-//     )`,
-// }
-
-// var seedDataStatements = []string{
-//     `INSERT INTO questions (
-//         question,
-//         dimension
-//     )
-
-//     VALUES (
-//         'I feel invigorated from my time being around other people.',
-//         'extraversion'
-//     ),
-//     (
-//         'I feel comfortable working in groups of people and enjoy it.',
-//         'extraversion'
-//     ),
-//     (
-//         'Others may describe me as ‘reserved’ or ‘reflective.',
-//         'introversion'
-//     ),
-//     (
-//         'Sometimes I spend too much time reflecting and do not take action quickly enough.',
-//         'introversion'
-//     );`,
-// }
-
-// // createTable creates the table, and if necessary, the database.
-// func createTable(conn *sql.DB) error {
-//     for _, stmt := range createTableStatements {
-//         _, err := conn.Exec(stmt)
-//         if err != nil {
-//             return err
-//         }
-//     }
-//     return nil
-// }
-
-// func seedData(conn *sql.DB) error {
-//     for _, stmt := range seedDataStatements {
-//         _, err := conn.Exec(stmt)
-//         if err != nil {
-//             return err
-//         }
-//     }
-//     return nil
-// }
-
 type Question struct {
     ID      int64  `json:"id"`
     Question   string `json:"question"`
@@ -78,8 +25,9 @@ type Question struct {
 
 type Answer struct {
     ID      int64  `json:"id"`
-    User   int64 `json:"user"`
+    Answer   int64 `json:"answer"`
     Question   int64 `json:"question"`
+    User   int64 `json:"user"`
     // Resonance string `json:"resonance"`
     // created_at time.Time `json:"created_at"`
     // updated_at time.Time `json:"updated_at"`
@@ -133,9 +81,10 @@ func createUser(db *sql.DB) gin.HandlerFunc {
         user := User{}
 
         json.Unmarshal([]byte(reqBody), &user)
-        fmt.Println(user.Email)
 
         stmt, err := db.Prepare("INSERT INTO users(email) VALUES ($1) RETURNING id")
+        fmt.Println(stmt)
+
         if err != nil {
             log.Fatalf("[x] Error. Reason: %s", err.Error())
         }
@@ -155,125 +104,27 @@ func createUser(db *sql.DB) gin.HandlerFunc {
 
 func createAnswers(db *sql.DB) gin.HandlerFunc {
     return func(c *gin.Context) {
-        answers := c.Param("answers")
+        buf := make([]byte, 1024)
+        num, _ := c.Request.Body.Read(buf)
+        reqBody := string(buf[0:num])
 
-        fmt.Println(answers)
-        // fmt.Println(c.Param)
-        fmt.Println(c.Param("answers"))
+        answers := []Answer{}
 
+        json.Unmarshal([]byte(reqBody), &answers)
 
+        stmt, _ := db.Prepare("INSERT INTO answers(question, answer, userid) VALUES ($1, $2, $3)")
 
-        // answers = make([]*Answer, 0)
-        // for _, answer := range mList {
-        //   _, err := stmt.Exec(int64(answer.Question), int64(answer.User))
-        //   if err != nil {
-        //     log.Fatal(err)
-        //   }
-        // }
+        for _, answer := range answers {
+          _, err := stmt.Exec(answer.Question, answer.Answer, answer.User)
+          if err != nil {
+            fmt.Println(err)
+          }
+        }
 
-        // query := "insert INTO users(email) values(?)"
-
-        // stmt, err := m.Conn.PrepareContext(ctx, query)
-        // if err != nil {
-        //     return -1, err
-        // }
-
-        // user := &User{
-        //     Email: email,
-        // }
-
-        // res, err := stmt.ExecContext(ctx, user.Email)
-        // fmt.Println(err)
-
-        // defer stmt.Close()
-
-        // if err != nil {
-        //     return -1, err
-        // }
-
-        // c.JSON(http.StatusOK, res.LastInsertId())
-
-        // stmt, _ := db.Prepare(pq.CopyIn("answers", "question", "user")) // answers is the table name
-        // m := &Answer{
-        //   Question:          123456,
-        //   User:       123434,
-        // }
-        // mList := make([]*Answer, 0)
-        // for i:=0 ; i<100 ; i++ {
-        //   mList = append(mList, m)
-        // }
-        // fmt.Println(stmt)
-        // fmt.Println(mList)
-        // for _, answer := range mList {
-        //   _, err := stmt.Exec(int64(answer.Question), int64(answer.User))
-        //   if err != nil {
-        //     log.Fatal(err)
-        //   }
-        // }
-        // err = stmt.Close()
-        // if err != nil {
-        //   log.Fatal(err)
-        // }
-        // err = txn.Commit()
-        // if err != nil {
-        //   log.Fatal(err)
-        // }
-        // for _, answer := range mList {
-        //   _, err := stmt.Exec(int64(answer.Question), int64(answer.User))
-        //   if err != nil {
-        //     log.Fatal(err)
-        //   }
-        // }
-        // _, err = stmt.Exec()
-        // if err != nil {
-        //   log.Fatal(err)
-        // }
-        // err = stmt.Close()
-        // if err != nil {
-        //   log.Fatal(err)
-        // }
-        // err = txn.Commit()
-        // if err != nil {
-        //   log.Fatal(err)
-        // }
-        // query := "insert INTO answers(question, user, resonance) values(?, ?, ?, ?)"
-
-        // stmt, err := m.Conn.PrepareContext(ctx, query)
-        // if err != nil {
-        //     return -1, err
-        // }
-
-        // payload, err := stmt.ExecContext(ctx, p.Question, p.User, p.Resonance)
-
-        // defer stmt.Close()
-
-        // if err != nil {
-        //     return -1, err
-        // }
-
-        // c.JSON(http.StatusOK, payload)
+        defer stmt.Close()
+        // c.JSON(http.StatusOK)
     }
 }
-
-// func ensureTableExists() error {
-//     conn, err := sql.Open("postgres", "")
-//     if err != nil {
-//         return fmt.Errorf("mysql: could not get a connection: %v", err)
-//     }
-//     defer conn.Close()
-
-//     // // Check the connection.
-//     // if conn.Ping() == driver.ErrBadConn {
-//     //     return fmt.Errorf("mysql: could not connect to the database. " +
-//     //         "could be bad address, or this address is not whitelisted for access.")
-//     // }
-
-//     if _, err := conn.Exec("DESCRIBE questions"); err != nil {
-//         createTable(conn)
-//         return seedData(conn)
-//     }
-//     return nil
-// }
 
 // init is invoked before main()
 func init() {
