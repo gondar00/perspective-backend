@@ -40,6 +40,41 @@ type User struct {
     // updated_at time.Time `json:"updated_at"`
 }
 
+func getAnswers(db *sql.DB) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        query := c.Request.URL.Query()
+        fmt.Println(query)
+        
+        // rows, err := db.Query("SELECT * FROM answers WHERE userid=$1")
+        // if err != nil {
+        //     c.String(http.StatusInternalServerError,
+        //         fmt.Sprintf("Error reading questions: %q", err))
+        //     return
+        // }
+        // defer rows.Close()
+
+        // payload := make([]*Answer, 0)
+        // for rows.Next() {
+        //     data := new(Answer)
+
+        //     err := rows.Scan(
+        //         &data.ID,
+        //         &data.Question,
+        //         &data.Answer,
+        //     )
+        //     if err != nil {
+        //         fmt.Println(err)
+        //     }
+        //     payload = append(payload, data)
+        // }
+        // if err := rows.Err(); err != nil {
+        //     log.Fatalf("[x] Error when getting the list of questions. Reason: %s", err.Error())
+        // }
+
+        // c.JSON(http.StatusOK, payload)
+    }
+}
+
 func getQuestions(db *sql.DB) gin.HandlerFunc {
     return func(c *gin.Context) {
         rows, err := db.Query("SELECT * FROM questions")
@@ -162,6 +197,7 @@ func main() {
     router.Use(gin.Logger())
 
     router.GET("/questions", getQuestions(db))
+    router.GET("/answers", getAnswers(db))
     router.POST("/users", createUser(db))
     router.POST("/answers", createAnswers(db))
 
