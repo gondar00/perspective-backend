@@ -42,36 +42,35 @@ type User struct {
 
 func getAnswers(db *sql.DB) gin.HandlerFunc {
     return func(c *gin.Context) {
-        query := c.Request.URL.Query()
-        fmt.Println(query)
-        
-        // rows, err := db.Query("SELECT * FROM answers WHERE userid=$1")
-        // if err != nil {
-        //     c.String(http.StatusInternalServerError,
-        //         fmt.Sprintf("Error reading questions: %q", err))
-        //     return
-        // }
-        // defer rows.Close()
+        user := c.Request.URL.Query()["query"][0]
 
-        // payload := make([]*Answer, 0)
-        // for rows.Next() {
-        //     data := new(Answer)
+        rows, err := db.Query("SELECT * FROM answers where userid=$1", user)
+        if err != nil {
+            c.String(http.StatusInternalServerError,
+                fmt.Sprintf("Error reading answers: %q", err))
+            return
+        }
+        defer rows.Close()
 
-        //     err := rows.Scan(
-        //         &data.ID,
-        //         &data.Question,
-        //         &data.Answer,
-        //     )
-        //     if err != nil {
-        //         fmt.Println(err)
-        //     }
-        //     payload = append(payload, data)
-        // }
-        // if err := rows.Err(); err != nil {
-        //     log.Fatalf("[x] Error when getting the list of questions. Reason: %s", err.Error())
-        // }
+        payload := make([]*Answer, 0)
+        for rows.Next() {
+            data := new(Answer)
 
-        // c.JSON(http.StatusOK, payload)
+            err := rows.Scan(
+                &data.ID,
+                &data.Question,
+                &data.Answer,
+                &data.User,
+            )
+            if err != nil {
+                fmt.Println(err)
+            }
+            payload = append(payload, data)
+        }
+        if err := rows.Err(); err != nil {
+            log.Fatalf("[x] Error when getting the list of answers. Reason: %s", err.Error())
+        }
+        c.JSON(http.StatusOK, payload)
     }
 }
 
