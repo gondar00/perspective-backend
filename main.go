@@ -28,6 +28,7 @@ type Answer struct {
     Answer   int64 `json:"answer"`
     Question   int64 `json:"question"`
     User   int64 `json:"user"`
+    Dimension   string `json:"dimension"`
     // Resonance string `json:"resonance"`
     // created_at time.Time `json:"created_at"`
     // updated_at time.Time `json:"updated_at"`
@@ -44,7 +45,7 @@ func getAnswers(db *sql.DB) gin.HandlerFunc {
     return func(c *gin.Context) {
         user := c.Request.URL.Query()["query"][0]
 
-        rows, err := db.Query("SELECT * FROM answers where userid=$1", user)
+        rows, err := db.Query("SELECT a.answer,q.dimension FROM answers a inner join questions q on a.question = q.id where a.userid=$1", user) 
         if err != nil {
             c.String(http.StatusInternalServerError,
                 fmt.Sprintf("Error reading answers: %q", err))
@@ -57,10 +58,8 @@ func getAnswers(db *sql.DB) gin.HandlerFunc {
             data := new(Answer)
 
             err := rows.Scan(
-                &data.ID,
-                &data.Question,
                 &data.Answer,
-                &data.User,
+                &data.Dimension,
             )
             if err != nil {
                 fmt.Println(err)
